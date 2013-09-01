@@ -34,7 +34,7 @@ void performOperation(float * prevNum, float currNum)
 	}
 }
 
-int value(string str)
+double value(string str)
 {
 	string term;
 	vector<string> arr;
@@ -43,25 +43,25 @@ int value(string str)
 		switch (str[i])
 		{
 		case '-':
-			if (i != 0)
-			{
-				arr.push_back(term);
-				term = "";
-			}
-			term += '-';
+				if (i != 0 && (str[i-1] > 47 && str[i-1] < 58))
+				{
+					arr.push_back(term);
+					term = "";
+				}
+				term += '-';
 			break;
 		case '+':
 			arr.push_back(term);
 			term = "";
 			break;
 		default:
-
+			term += str[i];
 			break;
 		}
 	}
-	arr.push_back(str);
+	arr.push_back(term);
 	int start;
-	float num;
+	float num, val = 0;
 	for (int i = 0; i < arr.size(); i++)
 	{
 		num = 1;
@@ -69,7 +69,7 @@ int value(string str)
 		start = 0;
 		for (int j = 0; j < arr.at(i).size(); j++)
 		{
-			if (!(arr.at(i).at(j) > 47 && arr.at(i).at(j) < 58) && j != 0)
+			if (!(arr.at(i).at(j) > 47 && arr.at(i).at(j) < 58 || arr.at(i).at(j) == '.' || arr.at(i).at(j) == '-') && j != 0)
 			{
 				float currNum = atof(arr.at(i).substr(start, j - start).c_str());
 				performOperation(&num, currNum);
@@ -77,19 +77,18 @@ int value(string str)
 				start = j + 1;
 			}
 		}
-		float currNum = atof(arr.at(i).substr(start).c_str());
-		performOperation(&num, currNum);
+			float currNum = atof(arr.at(i).substr(start).c_str());
+			performOperation(&num, currNum);
 		cout << num << endl;
+		val += num;
 	}
-
-
-	return(0);
+	return(val);
 }
 
 int main()
 {
 	string input;
 	cin >> input;
-	cout << value(input);
+	cout << value(input)<<endl;
 	return 0;
 }

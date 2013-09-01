@@ -1,8 +1,13 @@
-#include <iostream>
-#include <string>
-#include <vector>
 #include "Header.h"
-using namespace std;
+
+
+int main()
+{
+	string input = "";
+	cin >> input;
+	cout << value(input);
+	return 0;
+}
 
 inline eOperator operation(char op)
 {
@@ -15,6 +20,7 @@ inline eOperator operation(char op)
 
 	return opp;
 }
+
 void performOperation(double * prevNum, double currNum)
 {
 	switch (operatorEnum)
@@ -25,6 +31,9 @@ void performOperation(double * prevNum, double currNum)
 
 	case eDivide:
 		*prevNum /= currNum;
+		break;
+
+	case ePower:
 		break;
 
 	case eNoOperation:
@@ -60,6 +69,35 @@ double value(string str)
 		}
 	}
 	arr.push_back(term);
+
+	for (unsigned int i = 0; i < arr.size(); i++)
+	{
+		string currentIndexString = arr.at(i);
+		if (currentIndexString.find('^') != string::npos)
+		{
+			size_t prevPos = 0;
+			do
+			{
+				char operators[7] = { '/', '*', '-', '+', '^', '(', ')' };
+				prevPos = currentIndexString.find_first_of('^',prevPos);
+				size_t prevOperator = currentIndexString.find_last_of(operators,prevPos-1);
+				size_t nextOperator = currentIndexString.find_first_of(operators,prevPos+1);
+
+				double base = atof(currentIndexString.substr(prevOperator+1,prevPos-prevOperator).c_str());
+				double expo = atof(currentIndexString.substr(prevPos + 1, nextOperator-prevPos).c_str());
+					//3*3332^6
+				double power = pow(base,expo);
+				cout << currentIndexString << endl;
+				/*
+				Can't convert float -> string with specifying how accurate (how many decimals)
+				Float is never ending and by converting it you lose accuracy of calculator
+				*/
+				//currentIndexString.replace(prevOperator+1,nextOperator-prevOperator,);
+
+			}while(prevPos != string::npos);
+		}
+	}
+
 	int start;
 	double num, val = 0;
 	for (unsigned int i = 0; i < arr.size(); i++)
@@ -85,12 +123,4 @@ double value(string str)
 
 
 	return(val);
-}
-
-int main()
-{
-	string input;
-	cin >> input;
-	cout << value(input);
-	return 0;
 }

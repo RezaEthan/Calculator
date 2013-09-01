@@ -15,7 +15,7 @@ inline eOperator operation(char op)
 
 	return opp;
 }
-void performOperation(float * prevNum, float currNum)
+void performOperation(double * prevNum, double currNum)
 {
 	switch (operatorEnum)
 	{
@@ -34,11 +34,11 @@ void performOperation(float * prevNum, float currNum)
 	}
 }
 
-int value(string str)
+double value(string str)
 {
 	string term;
 	vector<string> arr;
-	for (int i = 0; i < str.length(); i++)
+	for (unsigned int i = 0; i < str.length(); i++)
 	{
 		switch (str[i])
 		{
@@ -55,35 +55,36 @@ int value(string str)
 			term = "";
 			break;
 		default:
-
+			term += str[i];
 			break;
 		}
 	}
-	arr.push_back(str);
+	arr.push_back(term);
 	int start;
-	float num;
-	for (int i = 0; i < arr.size(); i++)
+	double num, val = 0;
+	for (unsigned int i = 0; i < arr.size(); i++)
 	{
 		num = 1;
 		operatorEnum = eMultiply;
 		start = 0;
-		for (int j = 0; j < arr.at(i).size(); j++)
+		for (unsigned int j = 0; j < arr.at(i).size(); j++)
 		{
-			if (!(arr.at(i).at(j) > 47 && arr.at(i).at(j) < 58) && j != 0)
+			char currChar = arr.at(i).at(j);
+			if (!(currChar > 47 && currChar < 58 || currChar == '.') && j != 0)
 			{
-				float currNum = atof(arr.at(i).substr(start, j - start).c_str());
+				double currNum = atof(arr.at(i).substr(start, j - start).c_str());
 				performOperation(&num, currNum);
-				operatorEnum = operation(arr.at(i).at(j));
+				operatorEnum = operation(currChar);
 				start = j + 1;
 			}
 		}
-		float currNum = atof(arr.at(i).substr(start).c_str());
+		double currNum = atof(arr.at(i).substr(start).c_str());
 		performOperation(&num, currNum);
-		cout << num << endl;
+		val += num;
 	}
 
 
-	return(0);
+	return(val);
 }
 
 int main()

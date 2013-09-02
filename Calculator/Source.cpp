@@ -5,7 +5,7 @@ int main()
 {
 	string input = "";
 	cin >> input;
-	cout << value(input);
+	cout << value(input) << endl;
 	return 0;
 }
 
@@ -13,7 +13,7 @@ inline eOperator operation(char op)
 {
 
 	eOperator opp = eNoOperation;
-	char operators[7] = { '/', '*', '-', '+', '^', '(', ')' };
+	char operators[] = { '/', '*', '-', '+', '^', '(', ')' };
 	for (int k = 0; k < 7; k++)
 		if (op == operators[k])
 			opp = (enum eOperator)k;
@@ -33,9 +33,6 @@ void performOperation(double * prevNum, double currNum)
 		*prevNum /= currNum;
 		break;
 
-	case ePower:
-		break;
-
 	case eNoOperation:
 		cout << "NO OPERATION" << endl;
 		break;
@@ -43,6 +40,7 @@ void performOperation(double * prevNum, double currNum)
 	}
 }
 
+//performs the calculation of the string
 double value(string str)
 {
 	string term;
@@ -74,9 +72,9 @@ double value(string str)
 			break;
 		}
 	}
-	termClass * currTerm = new termClass();
-	currTerm->setStrTerm(term);
-	terms.push_back(currTerm);
+	termClass * _term = new termClass();
+	_term->setStrTerm(term);
+	terms.push_back(_term);
 
 	for (unsigned int i = 0; i < terms.size(); i++)
 	{
@@ -109,11 +107,6 @@ double value(string str)
 
 				prevPos = currentIndexString.find_first_of('^',prevPos);
 				prevPower = currentIndexString.find_first_of('&',prevPower + 1);
-				/*
-				Can't convert float -> string with specifying how accurate (how many decimals)
-				Float is never ending and by converting it you lose accuracy of calculator
-				*/
-				//currentIndexString.replace(prevOperator+1,nextOperator-prevOperator,);
 
 			} while(prevPos != string::npos);
 		}
@@ -127,10 +120,11 @@ double value(string str)
 		operatorEnum = eMultiply;
 		start = 0;
 		unsigned int num_pows = 0;
+		termClass * currTerm = terms.at(i);
 		for (unsigned int j = 0; j < terms.at(i)->strTerm().size(); j++)
 		{
 			char currChar = terms.at(i)->strTerm().at(j);
-			if (!(currChar > 47 && currChar < 58 || currChar == '.' || (j == '-' && j != 0)))
+			if (currChar < 47 || currChar > 58 || currChar == '.' || (j == '-' && j != 0))
 			{
 				double currNum;
 				if (currChar == '&')
@@ -139,26 +133,44 @@ double value(string str)
 					num_pows++;
 					performOperation(&num, currNum);
 				}
-				else if (terms.at(i)->strTerm().at(j-1) != '&')
+				else if (j > 0)
+				{
+					if (terms.at(i)->strTerm().at(j-1) != '&')
+					{
+						currNum = atof(terms.at(i)->strTerm().substr(start, j - start).c_str());
+						performOperation(&num, currNum);
+						operatorEnum = operation(currChar);
+
+					}
+					else if (terms.at(i)->strTerm().at(j-1) == '&')
+					{
+						operatorEnum = operation(currChar);
+					}
+				}
+
+				else
 				{
 					currNum = atof(terms.at(i)->strTerm().substr(start, j - start).c_str());
 					performOperation(&num, currNum);
 					operatorEnum = operation(currChar);
+				}
 
-				}
-				else if (terms.at(i)->strTerm().at(j-1) == '&')
-				{
-					operatorEnum = operation(currChar);
-				}
 				start = j + 1;
 			}
+
+			else if (j == terms.at(i)->strTerm().length()-1)
+			{
+				double currNum = atof(terms.at(i)->strTerm().substr(start).c_str());
+				performOperation(&num, currNum);
+			}
 		}
-		double currNum = atof(terms.at(i)->strTerm().substr(start).c_str());
-		performOperation(&num, currNum);
 		currTerm->setNumericValue(num);
-		val += num;
 	}
 
+	for (unsigned int i = 0; i < terms.size(); i++)
+	{
+		val += terms.at(i)->numericValue();
+	}
 
 	return(val);
 }

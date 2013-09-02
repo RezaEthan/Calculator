@@ -1,5 +1,5 @@
 #include "Header.h"
-
+#include "termClass.h"
 
 int main()
 {
@@ -46,7 +46,7 @@ void performOperation(double * prevNum, double currNum)
 double value(string str)
 {
 	string term;
-	vector<string> arr;
+	vector<termClass *> terms;
 	for (unsigned int i = 0; i < str.length(); i++)
 	{
 		switch (str[i])
@@ -54,70 +54,108 @@ double value(string str)
 		case '-':
 			if (i != 0)
 			{
-				arr.push_back(term);
+				termClass * currTerm = new termClass();
+				currTerm->setStrTerm(term);
+				terms.push_back(currTerm);
 				term = "";
 			}
 			term += '-';
 			break;
 		case '+':
-			arr.push_back(term);
-			term = "";
+			{
+				termClass * currTerm = new termClass();
+				currTerm->setStrTerm(term);
+				terms.push_back(currTerm);
+				term = "";
+			}
 			break;
 		default:
 			term += str[i];
 			break;
 		}
 	}
-	arr.push_back(term);
+	termClass * currTerm = new termClass();
+	currTerm->setStrTerm(term);
+	terms.push_back(currTerm);
 
-	for (unsigned int i = 0; i < arr.size(); i++)
+	for (unsigned int i = 0; i < terms.size(); i++)
 	{
-		string currentIndexString = arr.at(i);
+		string currentIndexString = terms.at(i)->strTerm();
 		if (currentIndexString.find('^') != string::npos)
 		{
-			size_t prevPos = 0;
+			int prevPos = 0;
+			int prevPower = 0;
 			do
 			{
-				char operators[7] = { '/', '*', '-', '+', '^', '(', ')' };
+				char operators[] = { '/', '*', '-', '+', '(', ')' };
 				prevPos = currentIndexString.find_first_of('^',prevPos);
-				size_t prevOperator = currentIndexString.find_last_of(operators,prevPos-1);
-				size_t nextOperator = currentIndexString.find_first_of(operators,prevPos+1);
+				int prevOperator = currentIndexString.find_last_of(operators,prevPos);
+				if (prevOperator == string::npos || prevOperator > prevPos)
+				{
+					prevOperator = -1;
+				}
+
+
+				int nextOperator = currentIndexString.find_first_of(operators,prevPos+1);
 
 				double base = atof(currentIndexString.substr(prevOperator+1,prevPos-prevOperator).c_str());
 				double expo = atof(currentIndexString.substr(prevPos + 1, nextOperator-prevPos).c_str());
-					//3*3332^6
+				//3*3332^6
 				double power = pow(base,expo);
-				cout << currentIndexString << endl;
+
+				currentIndexString.replace(prevOperator+1,nextOperator - (prevOperator + 1),"&");
+				terms.at(i)->setStrTerm(currentIndexString);
+				terms.at(i)->powValues.push_back(power);
+
+				prevPos = currentIndexString.find_first_of('^',prevPos);
+				prevPower = currentIndexString.find_first_of('&',prevPower + 1);
 				/*
 				Can't convert float -> string with specifying how accurate (how many decimals)
 				Float is never ending and by converting it you lose accuracy of calculator
 				*/
 				//currentIndexString.replace(prevOperator+1,nextOperator-prevOperator,);
 
-			}while(prevPos != string::npos);
+			} while(prevPos != string::npos);
 		}
 	}
 
 	int start;
 	double num, val = 0;
-	for (unsigned int i = 0; i < arr.size(); i++)
+	for (unsigned int i = 0; i < terms.size(); i++)
 	{
 		num = 1;
 		operatorEnum = eMultiply;
 		start = 0;
-		for (unsigned int j = 0; j < arr.at(i).size(); j++)
+		unsigned int num_pows = 0;
+		for (unsigned int j = 0; j < terms.at(i)->strTerm().size(); j++)
 		{
-			char currChar = arr.at(i).at(j);
-			if (!(currChar > 47 && currChar < 58 || currChar == '.') && j != 0)
+			char currChar = terms.at(i)->strTerm().at(j);
+			if (!(currChar > 47 && currChar < 58 || currChar == '.' || (j == '-' && j != 0)))
 			{
-				double currNum = atof(arr.at(i).substr(start, j - start).c_str());
-				performOperation(&num, currNum);
-				operatorEnum = operation(currChar);
+				double currNum;
+				if (currChar == '&')
+				{
+					currNum = terms.at(i)->powValues.at(num_pows);
+					num_pows++;
+					performOperation(&num, currNum);
+				}
+				else if (terms.at(i)->strTerm().at(j-1) != '&')
+				{
+					currNum = atof(terms.at(i)->strTerm().substr(start, j - start).c_str());
+					performOperation(&num, currNum);
+					operatorEnum = operation(currChar);
+
+				}
+				else if (terms.at(i)->strTerm().at(j-1) == '&')
+				{
+					operatorEnum = operation(currChar);
+				}
 				start = j + 1;
 			}
 		}
-		double currNum = atof(arr.at(i).substr(start).c_str());
+		double currNum = atof(terms.at(i)->strTerm().substr(start).c_str());
 		performOperation(&num, currNum);
+		currTerm->setNumericValue(num);
 		val += num;
 	}
 

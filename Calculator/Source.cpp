@@ -50,8 +50,7 @@ double value(string str)
 		switch (str[i])
 		{
 		case '-':
-			if (i != 0)
-			{
+			if (i != 0 && (str[i-1] > 47 && str[i-1] < 58)) {
 				termClass * currTerm = new termClass();
 				currTerm->setStrTerm(term);
 				terms.push_back(currTerm);
@@ -98,7 +97,6 @@ double value(string str)
 
 				double base = atof(currentIndexString.substr(prevOperator+1,prevPos-prevOperator).c_str());
 				double expo = atof(currentIndexString.substr(prevPos + 1, nextOperator-prevPos).c_str());
-				//3*3332^6
 				double power = pow(base,expo);
 
 				currentIndexString.replace(prevOperator+1,nextOperator - (prevOperator + 1),"&");
@@ -124,14 +122,31 @@ double value(string str)
 		for (unsigned int j = 0; j < terms.at(i)->strTerm().size(); j++)
 		{
 			char currChar = terms.at(i)->strTerm().at(j);
-			if (currChar < 47 || currChar > 58 || currChar == '.' || (j == '-' && j != 0))
+			if (((currChar < 48 || currChar > 58) && (currChar != '-' && currChar != '.')) || (currChar == '-' && j != 0))
 			{
 				double currNum;
 				if (currChar == '&')
 				{
-					currNum = terms.at(i)->powValues.at(num_pows);
+					if (j > 0)
+					{
+						if (terms.at(i)->strTerm().at(j-1) == '-')
+						{
+							currNum = (-1) * terms.at(i)->powValues.at(num_pows);
+						}
+						else
+						{
+							currNum = terms.at(i)->powValues.at(num_pows);
+						}
+					}
+					else
+					{
+						currNum = terms.at(i)->powValues.at(num_pows);
+					}
+
 					num_pows++;
 					performOperation(&num, currNum);
+
+
 				}
 				else if (j > 0)
 				{
@@ -170,6 +185,7 @@ double value(string str)
 	for (unsigned int i = 0; i < terms.size(); i++)
 	{
 		val += terms.at(i)->numericValue();
+		delete terms.at(i);
 	}
 
 	return(val);

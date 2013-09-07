@@ -13,7 +13,7 @@ public:
 	double numericValue ();
 	void setStrTerm (string strTerm);
 	string strTerm();
-
+	vector <double> bracValues;
 	vector <double> powValues;
 	virtual ~termClass(void);
 };

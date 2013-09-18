@@ -123,6 +123,7 @@ double value(string str) //performs the calculation of the string
 		{
 			int prevPos = 0;
 			int prevPower = 0;
+			int currBracIndex = 0;
 			do
 			{
 				char operators[] = { '/', '*', '-', '+', '(', ')' };
@@ -135,15 +136,22 @@ double value(string str) //performs the calculation of the string
 
 
 				int nextOperator = currentIndexString.find_first_of(operators,prevPos+1);
-
-				double base = atof(currentIndexString.substr(prevOperator+1,prevPos-prevOperator).c_str());
+				double base = 0;
+				if (currentIndexString.substr(prevPos - 1, 1) == "$") //there was a bracket value behind the ^ making the base the bracket value
+				{
+					base = terms.at(i)->bracValues.at(currBracIndex);
+					currBracIndex++;
+				}
+				else
+				{
+					base = atof(currentIndexString.substr(prevOperator+1,prevPos-prevOperator).c_str());
+				}
 				double expo = atof(currentIndexString.substr(prevPos + 1, nextOperator-prevPos).c_str());
 				double power = pow(base,expo);
 
 				currentIndexString.replace(prevOperator+1,nextOperator - (prevOperator + 1),"&");
 				terms.at(i)->setStrTerm(currentIndexString);
 				terms.at(i)->powValues.push_back(power);
-				//cout<<terms.at(i)->strTerm()<<endl;
 				prevPos = currentIndexString.find_first_of('^',prevPos);
 				prevPower = currentIndexString.find_first_of('&',prevPower + 1);
 
@@ -191,15 +199,6 @@ double value(string str) //performs the calculation of the string
 
 					}
 				}
-
-				/*else
-				{
-					currNum = atof(terms.at(i)->strTerm().substr(start, j - start).c_str());
-					performOperation(&num, currNum);
-					operatorEnum = operation(currChar);
-
-				}*/
-
 				start = j + 1;
 			}
 

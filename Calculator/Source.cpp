@@ -4,8 +4,10 @@
 int main()
 {
 	string input = "";
-	cin >> input;
-	cout << value(input) << endl;
+	do {
+		cin >> input;
+		cout << value(input) << endl;
+	}while(input != "0");
 	return 0;
 }
 
@@ -94,21 +96,23 @@ double value(string str) //performs the calculation of the string
 		string currentIndexString = terms.at(i)->strTerm();
 		if (currentIndexString.find('(') != string::npos)
 		{
+			int hold;
 			int firstBrac = currentIndexString.find_first_of('(',0);
 			int secondBrac = currentIndexString.find_first_of(')',firstBrac);
 			do
 			{
 				string replacer = "";
 				terms.at(i)->bracValues.push_back(value(currentIndexString.substr(firstBrac+1,secondBrac-firstBrac-1))); 
-				if (firstBrac != 0 && currentIndexString[firstBrac-1] > 48 && currentIndexString[firstBrac-1] < 58)
+				if (firstBrac != 0 && ((currentIndexString[firstBrac-1] > 48 && currentIndexString[firstBrac-1] < 58) || currentIndexString[firstBrac-1] == '$' || currentIndexString[firstBrac-1] == '&'))
 					replacer += '*';
 				replacer += '$';
-				if (secondBrac != currentIndexString.length()-1 && currentIndexString[secondBrac+1] > 48 && currentIndexString[secondBrac+1] < 58)
+				if (secondBrac != currentIndexString.length()-1 && ((currentIndexString[secondBrac+1] > 48 && currentIndexString[secondBrac+1] < 58) || currentIndexString[secondBrac+1] == '$' || currentIndexString[secondBrac+1] == '&'))
 					replacer += '*';
+				hold = currentIndexString.find_first_of('(',secondBrac);
 				currentIndexString.replace(firstBrac,secondBrac-firstBrac+1,replacer);
 				terms.at(i)->setStrTerm(currentIndexString);
-				firstBrac = currentIndexString.find_first_of('(',secondBrac);
-				secondBrac = currentIndexString.find_first_of(')',firstBrac);
+				firstBrac = currentIndexString.find_first_of('(',firstBrac);
+				secondBrac = currentIndexString.find_first_of(')',hold);
 			}while (firstBrac != string::npos);
 		}
 	}
@@ -139,7 +143,7 @@ double value(string str) //performs the calculation of the string
 				currentIndexString.replace(prevOperator+1,nextOperator - (prevOperator + 1),"&");
 				terms.at(i)->setStrTerm(currentIndexString);
 				terms.at(i)->powValues.push_back(power);
-				cout<<terms.at(i)->strTerm()<<endl;
+				//cout<<terms.at(i)->strTerm()<<endl;
 				prevPos = currentIndexString.find_first_of('^',prevPos);
 				prevPower = currentIndexString.find_first_of('&',prevPower + 1);
 
@@ -160,83 +164,64 @@ double value(string str) //performs the calculation of the string
 		for (unsigned int j = 0; j < terms.at(i)->strTerm().size(); j++)
 		{
 			char currChar = terms.at(i)->strTerm().at(j);
-			if (((currChar < 48 || currChar > 58) && (currChar != '-' && currChar != '.')) || (currChar == '-' && j != 0))
-			{
+			if (((currChar < 48 || currChar > 58) && (currChar != '-' && currChar != '.' && currChar != '$' && currChar != '&')) || (currChar == '-' && j != 0))
+			{ //^if currchar isn't a number and isn't a - or . or $ or &; or if its - and is array element 0
 				double currNum;
-				if (currChar == '&')
+				if (j > 0)
 				{
-					if (j > 0)
-					{
-						if (terms.at(i)->strTerm().at(j-1) == '-')
-						{
-							currNum = (-1) * terms.at(i)->powValues.at(num_pows);
-						}
-						else
-						{
-							currNum = terms.at(i)->powValues.at(num_pows);
-						}
-					}
-					else
+					if (terms.at(i)->strTerm().at(j-1) == '&')
 					{
 						currNum = terms.at(i)->powValues.at(num_pows);
+						num_pows++;
+						performOperation(&num, currNum);
+						operatorEnum = operation(currChar);
 					}
-
-					num_pows++;
-					performOperation(&num, currNum);
-
-
-				}
-				else if (currChar == '$')
-				{
-					if (j > 0)
-					{
-						if (terms.at(i)->strTerm().at(j-1) == '-')
-						{
-							currNum = (-1) * terms.at(i)->bracValues.at(num_bracs);
-						}
-						else
-						{
-							currNum = terms.at(i)->bracValues.at(num_bracs);
-						}
-					}
-					else
+					else if (terms.at(i)->strTerm().at(j-1) == '$')
 					{
 						currNum = terms.at(i)->bracValues.at(num_bracs);
+						num_bracs++;
+						performOperation(&num, currNum);
+						operatorEnum = operation(currChar);
 					}
-
-					num_bracs++;
-					performOperation(&num, currNum);
-				}
-				else if (j > 0)
-				{
-					if (terms.at(i)->strTerm().at(j-1) != '&')
+					else 
 					{
 						currNum = atof(terms.at(i)->strTerm().substr(start, j - start).c_str());
 						performOperation(&num, currNum);
 						operatorEnum = operation(currChar);
 
 					}
-					else if (terms.at(i)->strTerm().at(j-1) == '&')
-					{
-						operatorEnum = operation(currChar);
-					}
 				}
 
-				else
+				/*else
 				{
 					currNum = atof(terms.at(i)->strTerm().substr(start, j - start).c_str());
 					performOperation(&num, currNum);
 					operatorEnum = operation(currChar);
 
-				}
+				}*/
 
 				start = j + 1;
 			}
 
 			else if (j == terms.at(i)->strTerm().length()-1)
 			{
-				double currNum = atof(terms.at(i)->strTerm().substr(start).c_str());
-				performOperation(&num, currNum);
+					if (terms.at(i)->strTerm().at(j) == '&')
+					{
+						double currNum = terms.at(i)->powValues.at(num_pows);
+						num_pows++;
+						performOperation(&num, currNum);
+					}
+					else if (terms.at(i)->strTerm().at(j) == '$')
+					{
+						double currNum = terms.at(i)->bracValues.at(num_bracs);
+						num_bracs++;
+						performOperation(&num, currNum);
+					}
+					else 
+					{
+						double currNum = atof(terms.at(i)->strTerm().substr(start, j - start+1).c_str());
+						performOperation(&num, currNum);
+					}
 			}
 		}
 		currTerm->setNumericValue(num);

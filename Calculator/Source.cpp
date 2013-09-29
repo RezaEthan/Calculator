@@ -4,10 +4,16 @@
 int main()
 {
 	string input = "";
-	do {
+	while (true)
+	{
 		cin >> input;
-		cout << value(input) << endl;
-	}while(input != "0");
+		if (input == "quit")
+			return 0;
+		else if (error(input) == false)
+			cout << value(input) << endl;
+		else
+			cout<<"Error: Invalid Syntax"<<endl;
+	}
 	return 0;
 }
 
@@ -15,11 +21,15 @@ inline eOperator operation(char op)
 {
 
 	eOperator opp = eNoOperation;
-	char operators[] = { '/', '*', '-', '+', '^', '(', ')' };
-	for (int k = 0; k < 7; k++)
-		if (op == operators[k])
-			opp = (enum eOperator)k;
-
+	if (op > 47 && op < 58)
+		opp = eNum;
+	else 
+	{
+		char operators[] = { '/', '*', '-', '+', '^', '(', ')' };
+		for (int k = 0; k < 7; k++)
+			if (op == operators[k])
+				opp = (enum eOperator)k;
+	}
 	return opp;
 }
 
@@ -42,10 +52,9 @@ inline void performOperation(double * prevNum, double currNum)
 	}
 }
 
-double value(string str) //performs the calculation of the string
+void termSort(string str, vector<termClass*>*terms)
 {
 	string term;
-	vector<termClass *> terms;
 	unsigned int inBrac = 0;
 	for (unsigned int i = 0; i < str.length(); i++) //sorts the string into terms, turning each into a termClass and putting them in a vector
 	{
@@ -56,7 +65,7 @@ double value(string str) //performs the calculation of the string
 			{
 				termClass * currTerm = new termClass();
 				currTerm->setStrTerm(term);
-				terms.push_back(currTerm);
+				terms->push_back(currTerm);
 				term = "";
 			}
 			term += '-';
@@ -67,7 +76,7 @@ double value(string str) //performs the calculation of the string
 				{
 					termClass * currTerm = new termClass();
 					currTerm->setStrTerm(term);
-					terms.push_back(currTerm);
+					terms->push_back(currTerm);
 					term = "";
 				}
 				else
@@ -89,11 +98,15 @@ double value(string str) //performs the calculation of the string
 	}
 	termClass * _term = new termClass();
 	_term->setStrTerm(term);
-	terms.push_back(_term);
+	terms->push_back(_term);
 
-	for (unsigned int i = 0; i < terms.size(); i++) //finds the values of the brackets and stores them in a double array, replacing the brackets with $
+}
+
+void storePows(vector<termClass*>*terms)
+{
+	for (unsigned int i = 0; i < terms->size(); i++) //finds the values of the brackets and stores them in a double array, replacing the brackets with $
 	{
-		string currentIndexString = terms.at(i)->strTerm();
+		string currentIndexString = terms->at(i)->strTerm();
 		if (currentIndexString.find('(') != string::npos) //if brackets exist in terms
 		{
 			int firstBrac = currentIndexString.find_first_of('(',0);
@@ -112,14 +125,14 @@ double value(string str) //performs the calculation of the string
 			do
 			{
 				string replacer = "";
-				terms.at(i)->bracValues.push_back(value(currentIndexString.substr(firstBrac+1,secondBrac-firstBrac-1))); 
+				terms->at(i)->bracValues.push_back(value(currentIndexString.substr(firstBrac+1,secondBrac-firstBrac-1))); 
 				if (firstBrac != 0 && ((currentIndexString[firstBrac-1] > 48 && currentIndexString[firstBrac-1] < 58) || currentIndexString[firstBrac-1] == '$' || currentIndexString[firstBrac-1] == '&'))
 					replacer += '*';
 				replacer += '$';
 				if (secondBrac != currentIndexString.length()-1 && ((currentIndexString[secondBrac+1] > 48 && currentIndexString[secondBrac+1] < 58) || currentIndexString[secondBrac+1] == '$' || currentIndexString[secondBrac+1] == '&'))
 					replacer += '*';
 				currentIndexString.replace(firstBrac,secondBrac-firstBrac+1,replacer);
-				terms.at(i)->setStrTerm(currentIndexString);
+				terms->at(i)->setStrTerm(currentIndexString);
 				firstBrac = currentIndexString.find_first_of('(',firstBrac+1);
 				for (unsigned int index = firstBrac + 1; index < currentIndexString.length() - 1; index++)
 				{
@@ -134,9 +147,13 @@ double value(string str) //performs the calculation of the string
 			}while (firstBrac != string::npos);
 		}
 	}
-	for (unsigned int i = 0; i < terms.size(); i++) //same as above but for powers, and replaces with &
+}
+
+void storeBracs(vector<termClass*>*terms)
+{
+	for (unsigned int i = 0; i < terms->size(); i++) //same as above but for powers, and replaces with &
 	{
-		string currentIndexString = terms.at(i)->strTerm();
+		string currentIndexString = terms->at(i)->strTerm();
 		if (currentIndexString.find('^') != string::npos)
 		{
 			int posOfPow = currentIndexString.length() - 1;
@@ -162,7 +179,7 @@ double value(string str) //performs the calculation of the string
 				switch(currentIndexString[posOfPow-1])
 				{
 				case '$':
-					base = terms.at(i)->bracValues.at(currBracIndex);
+					base = terms->at(i)->bracValues.at(currBracIndex);
 					currBracIndex++;
 					break;
 				default:
@@ -174,12 +191,12 @@ double value(string str) //performs the calculation of the string
 				switch(currentIndexString[posOfPow+1])
 				{
 				case '$':
-					expo = terms.at(i)->bracValues.at(currBracIndex);
+					expo = terms->at(i)->bracValues.at(currBracIndex);
 					currBracIndex++;
 					break;
 				case '&':
-					expo = terms.at(i)->powValues.at(currPowIndex);
-					terms.at(i)->powValues.erase(terms.at(i)->powValues.begin() + currPowIndex);
+					expo = terms->at(i)->powValues.at(currPowIndex);
+					terms->at(i)->powValues.erase(terms->at(i)->powValues.begin() + currPowIndex);
 					break;
 				default:
 					expo = atof(currentIndexString.substr(posOfPow + 1, nextOperator-posOfPow).c_str());
@@ -187,50 +204,48 @@ double value(string str) //performs the calculation of the string
 				}
 				double power = pow(base,expo);
 				currentIndexString.replace(prevOperator+1,nextOperator - (prevOperator + 1),"&");
-				terms.at(i)->setStrTerm(currentIndexString);
-				terms.at(i)->powValues.push_back(power);
+				terms->at(i)->setStrTerm(currentIndexString);
+				terms->at(i)->powValues.push_back(power);
 				posOfPow = currentIndexString.find_last_of('^',posOfPow);
 				prevPower = currentIndexString.find_first_of('&',prevPower + 1);
 
 			} while(posOfPow != string::npos);
 		}
 	}
+}
 
-	int start;
-	double num, val = 0;
-	for (unsigned int i = 0; i < terms.size(); i++) //calculates the values of each term
-	{
-		num = 1;
+double numericValue(termClass *currTerm)
+{
+		double num = 1;
 		operatorEnum = eMultiply;
-		start = 0;
+		int start = 0;
 		unsigned int num_pows = 0;
 		unsigned int num_bracs = 0;
-		termClass * currTerm = terms.at(i);
-		for (unsigned int j = 0; j < terms.at(i)->strTerm().size(); j++)
+		for (unsigned int j = 0; j < currTerm->strTerm().size(); j++)
 		{
-			char currChar = terms.at(i)->strTerm().at(j);
+			char currChar = currTerm->strTerm().at(j);
 			if (((currChar < 48 || currChar > 58) && (currChar != '-' && currChar != '.' && currChar != '$' && currChar != '&')) || (currChar == '-' && j != 0))
 			{ //^if currchar isn't a number and isn't a - or . or $ or &; or if its - and is array element 0
 				double currNum;
 				if (j > 0)
 				{
-					if (terms.at(i)->strTerm().at(j-1) == '&')
+					if (currTerm->strTerm().at(j-1) == '&')
 					{
-						currNum = terms.at(i)->powValues.at(num_pows);
+						currNum = currTerm->powValues.at(num_pows);
 						num_pows++;
 						performOperation(&num, currNum);
 						operatorEnum = operation(currChar);
 					}
-					else if (terms.at(i)->strTerm().at(j-1) == '$')
+					else if (currTerm->strTerm().at(j-1) == '$')
 					{
-						currNum = terms.at(i)->bracValues.at(num_bracs);
+						currNum = currTerm->bracValues.at(num_bracs);
 						num_bracs++;
 						performOperation(&num, currNum);
 						operatorEnum = operation(currChar);
 					}
 					else 
 					{
-						currNum = atof(terms.at(i)->strTerm().substr(start, j - start).c_str());
+						currNum = atof(currTerm->strTerm().substr(start, j - start).c_str());
 						performOperation(&num, currNum);
 						operatorEnum = operation(currChar);
 
@@ -239,35 +254,70 @@ double value(string str) //performs the calculation of the string
 				start = j + 1;
 			}
 
-			else if (j == terms.at(i)->strTerm().length()-1)
+			else if (j == currTerm->strTerm().length()-1)
 			{
-				if (terms.at(i)->strTerm().at(j) == '&')
+				if (currTerm->strTerm().at(j) == '&')
 				{
-					double currNum = terms.at(i)->powValues.at(num_pows);
+					double currNum = currTerm->powValues.at(num_pows);
 					num_pows++;
 					performOperation(&num, currNum);
 				}
-				else if (terms.at(i)->strTerm().at(j) == '$')
+				else if (currTerm->strTerm().at(j) == '$')
 				{
-					double currNum = terms.at(i)->bracValues.at(num_bracs);
+					double currNum = currTerm->bracValues.at(num_bracs);
 					num_bracs++;
 					performOperation(&num, currNum);
 				}
 				else 
 				{
-					double currNum = atof(terms.at(i)->strTerm().substr(start, j - start+1).c_str());
+					double currNum = atof(currTerm->strTerm().substr(start, j - start+1).c_str());
 					performOperation(&num, currNum);
 				}
 			}
 		}
-		currTerm->setNumericValue(num);
-	}
+		return num;
+}
 
+double value(string str) //performs the calculation of the string
+{
+	
+	vector<termClass *> terms;
+	termSort(str, &terms);
+	storePows(&terms);
+	storeBracs(&terms);
+	double val = 0;
 	for (unsigned int i = 0; i < terms.size(); i++) //adds up the terms and deletes the array
 	{
-		val += terms.at(i)->numericValue();
+		val += numericValue(terms.at(i));
 		delete terms.at(i);
 	}
-
 	return(val);
+}
+
+bool error (string str)
+{
+	int brackCount = 0;
+	for (int i = 0; i < str.length(); i++)
+	{
+		if (i == 0 && !(operation(str[i]) == eOpenBrack || operation(str[i]) == eNum || operation(str[i]) == eSubtract))
+			return true;
+		if (i == str.length()-1 && !(operation(str[i]) == eCloseBrack || operation(str[i]) == eNum))
+			return true;
+		if (i != 0 && !(operation(str[i]) == eNum || operation(str[i]) == eOpenBrack || operation(str[i]) == eCloseBrack) && !(operation(str[i-1]) == eNum || operation(str[i-1]) == eOpenBrack || operation(str[i-1]) == eCloseBrack))
+			return true;
+		if (operation(str[i]) == eNoOperation)
+			return true;
+		if (str[i] == '(')
+			brackCount++;
+		else if (str[i] == ')')
+		{
+			if (brackCount == 0)
+				return true;
+			brackCount--;
+		}
+	}
+	if (brackCount != 0)
+		return true;
+	else
+		return false;
 }

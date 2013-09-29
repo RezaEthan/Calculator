@@ -15,7 +15,8 @@ enum eOperator
 	ePower,
 	eOpenBrack,
 	eCloseBrack,
-	eNoOperation
+	eNoOperation,
+	eNum
 };
 
 eOperator operatorEnum;
@@ -24,5 +25,6 @@ eOperator operatorEnum;
 double value(string str);
 void performOperation(double * prevNum, double currNum);
 inline eOperator operation(char op);
+bool error(string str);
 
 #endif
